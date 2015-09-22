@@ -36,7 +36,7 @@ pub extern fn destination(
     "meters" | "m" => wgs84::RADIUS,
     "miles" | "mi" => utils::km_to_mi(wgs84::RADIUS / 1000.0),
     "radians" => 1.0,
-    _ => panic!("Unknown unit of measurement")
+    _ => panic!("Unknown unit of measurement: {}", units)
   };
 
   let dlat = (lat.sin() * (distance / radius).cos() +
@@ -53,6 +53,27 @@ pub extern fn destination(
 mod tests {
   use lodestone_point::FeaturePoint;
   use super::destination;
+
+  #[test]
+  #[should_panic(expected = "Unknown unit of measurement")]
+  fn test_wrong_units() {
+    let sf = vec![-122.4167,37.7833];
+    let sf_point = FeaturePoint::new(sf);
+    destination(&sf_point, 100.0, 50.0, "leagues");
+  }
+
+  #[test]
+  fn test_simple() {
+    let pt1 = FeaturePoint::new(vec![0.0, 0.0]);
+    let dist = 55.6; // kilometers
+    let bearing = 90.0;
+
+    // expected
+    let pt2 = FeaturePoint::new(vec![0.4994633, 0.0]);
+
+    let dest = destination(&pt1, dist, bearing, "km");
+    assert_eq!(dest, pt2);
+  }
   
   #[test]
   fn test_from_sf_using_kilometers() {
@@ -68,7 +89,7 @@ mod tests {
     // calculate
     let dest = destination(&sf_point, distance, bearing, "km");
 
-    assert_eq!(dest == ny_point, true);
+    assert_eq!(dest, ny_point);
   }
 
   #[test]
@@ -85,6 +106,6 @@ mod tests {
     // calculate
     let dest = destination(&sf_point, distance, bearing, "mi");
 
-    assert_eq!(dest == ny_point, true);
+    assert_eq!(dest, ny_point);
   }
 }
